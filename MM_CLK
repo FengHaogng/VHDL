@@ -1,0 +1,56 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use std.textio.all;
+use ieee.std_logic_textio.all;
+use ieee.std_logic_unsigned.all;
+entity MM_CLK is
+  Port (a0, a1, a2, a3 : in STD_LOGIC_VECTOR(31 downto 0);
+        en, clk: in STD_LOGIC;
+        y : out STD_LOGIC_VECTOR(31 downto 0));
+end MM_CLK;
+
+architecture behav of MM_CLK is
+  subtype ROM_Addr is integer range 0 to 11;
+  type ROM is array (ROM_Addr) of integer;
+  signal flag:std_logic:='0';
+  signal data: ROM;
+  signal data_M: ROM;
+  procedure Load_ROM (signal data_in: inout ROM) is
+  	file filein: text open read_mode is "E:\VHDL\MM_CLK\input.txt";
+  	variable line_in: line;
+  	variable dat_in: integer:= 0;
+  	variable i: integer := 0;
+ 	 begin
+    	while not endfile(filein) loop
+				readline(filein,line_in);
+				read(line_in,dat_in);
+				data_in(i) <= dat_in;
+				read(line_in,dat_in);
+				data_in(i+1) <= dat_in;
+				read(line_in,dat_in);
+      	data_in(i+2) <= dat_in;
+      	read(line_in,dat_in);
+      	data_in(i+3) <= dat_in;
+      	i := i+4;
+    	end loop;
+	end procedure;
+  begin
+    Mul: process(clk,en,a0,a1,a2,a3) is
+      variable b: integer:= 0;
+      begin
+      if(flag = '0') then
+		    Load_ROM(data);
+		    flag<='1';
+		  end if;
+      if (en='1')then
+		    if (clk'event and clk='1') then
+          b := to_integer(unsigned(a0))*data(0) + to_integer(unsigned(a1))*data(1) + to_integer(unsigned(a2))*data(2) + to_integer(unsigned(a3))*data(3);
+          y <= std_logic_vector(to_unsigned(b,32));
+          data(0 to 7)<= data(4 to 11);
+		    end if;
+		  else
+			  y<=(others => '0');
+		  end if;
+    end process Mul;
+end architecture behav;
